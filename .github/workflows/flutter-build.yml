@@ -621,7 +621,7 @@ jobs:
           mv apple-codesign-0.22.0-macos-universal/rcodesign /usr/local/bin
           popd
 
-      - name: Install build runtime
+      - name: Install build runtime (brew)
         run: |
           brew install llvm create-dmg nasm
           # pkg-config is handled in a separate step, because it may be already installed by `macos-latest`(14.7.1) runner
@@ -629,6 +629,34 @@ jobs:
               echo "pkg-config is already installed"
           else
               brew install pkg-config
+          fi
+          nasm -v
+          
+      - name: Downgrade NASM to 2.15 (x86_64 only)
+        if: matrix.job.target == 'x86_64-apple-darwin'
+        run: |
+          set -e
+          curl -L -o nasm.zip https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/macosx/nasm-2.15.05-macosx.zip
+          unzip -q nasm.zip
+          sudo cp nasm-2.15.05/nasm /usr/local/bin/
+          sudo cp nasm-2.15.05/ndisasm /usr/local/bin/
+          sudo chmod +x /usr/local/bin/nasm /usr/local/bin/ndisasm
+          echo "Using NASM:"
+          which nasm
+          nasm -v
+
+
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+        with:
+          vcpkgGitCommitId: ${{ env.VCPKG_COMMIT_ID }}
+          doNotCache: false
+
+      - name: Install vcpkg dependencies
+        run: |
+          if ! $VCPKG_ROOT/vcpkg install --x-install-root="$VCPKG_ROOT/installed"; then
+            find "$VCPKG_ROOT" -name "*.log" -print -exec cat {} \;
+            exit 1
           fi
 
       - name: Install flutter
