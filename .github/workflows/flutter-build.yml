@@ -631,13 +631,17 @@ jobs:
               brew install pkg-config
           fi
           
-      - name: Fix nasm for vcpkg (x86_64 only)
+      - name: Install NASM 2.15 (manual, x86_64 only)
         if: matrix.job.target == 'x86_64-apple-darwin'
         run: |
-          brew uninstall nasm || true
-          brew install nasm@2.15
-          brew link --force nasm@2.15
+          set -e
+          curl -L -o nasm.zip https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/macosx/nasm-2.15.05-macosx.zip
+          unzip -q nasm.zip
+          sudo cp nasm-2.15.05/nasm /usr/local/bin/
+          sudo cp nasm-2.15.05/ndisasm /usr/local/bin/
+          sudo chmod +x /usr/local/bin/nasm /usr/local/bin/ndisasm
           nasm -v
+
 
       - name: Setup vcpkg with Github Actions binary cache
         uses: lukka/run-vcpkg@v11
